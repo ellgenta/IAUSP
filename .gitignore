@@ -42,4 +42,4 @@
 
 # vs-code directory 
 
-*.vscode
+.vscode/

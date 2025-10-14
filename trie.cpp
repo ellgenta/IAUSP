@@ -5,20 +5,11 @@
 #define UNIT_TESTS
 #define CH_SIZE  256
 
-using color = enum { white, black };
-
 struct trie_node {
-    //std::string prefix;
     trie_node* ch[CH_SIZE] = {0};
     size_t count = 0;
 
-    //trie_node() { prefix = ""; }
-
     trie_node() {}
-
-    //trie_node(trie_node* par, char sym) { prefix = par->prefix + sym; }
-
-    //trie_node(std::string& stem) { prefix = stem; }
 
     bool is_leaf() {
         if(this == nullptr) {
