@@ -1,78 +1,75 @@
 #include <string>
-#include <vector>
 
 #define TRIE
 #define UNIT_TESTS
+#define CH_SIZE  256
 
 struct trie_node {
     std::string prefix;
-    std::vector<trie_node*> ch;
+    trie_node* ch[CH_SIZE] = {0};
 
-    trie_node() {
-        prefix = "";
-        ch = {};
-    }
+    trie_node() { prefix = ""; }
 
-    trie_node(trie_node* par, char sym) {
-        prefix = par->prefix + sym;
-        ch = {};
-    }
+    trie_node(trie_node* par, char sym) { prefix = par->prefix + sym; }
 
-    trie_node(std::string& stem) {
-        prefix = stem;
-        ch = {};
-    }
+    trie_node(std::string& stem) { prefix = stem; }
 };
 
 class trie {
 private:
-    trie_node* root = nullptr;  
+    trie_node* root = nullptr;
+    size_t ch_count = 0;  
 
     trie_node* _find(trie_node* root, std::string& stem, size_t i) {
-        if(root == nullptr)
-            return;
-
-        size_t j = 0;
-        while(j < root->ch.size()) {
-            if(root->ch[j]->prefix[i] == stem[i])
-                break;
+        if(root == nullptr) {
+            return nullptr;
         }
 
-        if(j < root->ch.size() && i+1 < stem.size()) 
-            return _find(root->ch[j], stem, i+1);
-        else if(j < root->ch.size()) 
-            return root->ch[j];
-        else 
-            return nullptr;
+        if(i >= stem.size()) {
+            return root;
+        }
+
+        if(root->ch[stem[i]] != nullptr) {
+            return _find(root->ch[stem[i]], stem, i+1);
+        } 
+
+        return nullptr;
     }
 
     void _insert(trie_node* root, std::string& stem, size_t i) {
-        if(i >= stem.size())
-            return;
-
-        if(root == nullptr) {
-            root = new trie_node(stem);
+        if(root == nullptr || i == stem.size()) {
             return;
         }
 
-        size_t j = 0;
-        while(j < root->ch.size()) {
-            if(root->ch[j]->prefix[i] == stem[i]);
-                break;
-        }
-
-        if(j < root->ch.size()) 
-            _insert(root->ch[j], stem, i+1);
-        else {
-            trie_node* new_ch = new trie_node(root, stem[i]);
-            root->ch.push_back(new_ch);
+        if(root->ch[stem[i]] != nullptr) {
+            _insert(root->ch[stem[i]], stem, i+1);
+        } else {
+            if(root == this->root) {
+                ch_count += 1;
+            }
+            _push_prefix(root, stem, i);
         }
     }
 
+    void _push_prefix(trie_node* st_node, std::string& stem, size_t st) {
+        if(st == stem.size())
+            return;
+        st_node->ch[stem[st]] = new trie_node;
+        _push_prefix(st_node->ch[stem[st]], stem, st+1);
+    }
+
     void _clear(trie_node* root) {
-        for(size_t i = 0; i < root->ch.size(); i++) 
-            _clear(root->ch[i]);
-        free(root);
+        if(root == nullptr) {
+            return;
+        }
+
+        for(size_t i = 0; i < CH_SIZE; i++) {
+            if(root->ch[i] != nullptr) {
+                _clear(root->ch[i]);
+            }
+        }
+
+        delete root;
     }
 public:
     trie() { root = new trie_node; }
@@ -85,7 +82,7 @@ public:
 
     void erase(std::string& stem) {}
 
-    bool empty() { return root == nullptr; }
+    bool empty() { return ch_count == 0; }
 
     bool contains(std::string& stem) { return find(stem) != nullptr; }
 
@@ -97,8 +94,31 @@ public:
 
 #ifdef UNIT_TESTS
 
+#include <cassert>
+
 int main(void) 
 {
+    trie T;
+
+    assert(T.empty() == true);
+
+    std::string _a = "cat";
+    std::string _b = "car";
+    std::string _c = "carnivore";
+    std::string _d = "search";
+
+    T.insert(_a);
+    T.insert(_b);
+    T.insert(_c);
+
+    assert(T.empty() == false);
+
+    assert(T.contains(_a) == true);
+    assert(T.contains(_b) == true);
+    assert(T.find(_c) != nullptr);
+    assert(T.find(_d) == nullptr);
+
+    T.clear();
 
     return 0;
 }
