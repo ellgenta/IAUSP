@@ -108,6 +108,13 @@ private:
 public:
     trie() { root = new trie_node; }
 
+    trie(std::vector<std::string>& list) {
+        root = new trie_node;
+
+        for(auto s : list) 
+            insert(s);
+    }
+
     ~trie() { _clear(root); } 
     
     trie_node* find(std::string& stem) { return _find(root, stem, 0); }
@@ -157,6 +164,8 @@ public:
         root = nullptr;
     }
 };
+
+#undef UNIT_TESTS
 
 #ifdef UNIT_TESTS
 
