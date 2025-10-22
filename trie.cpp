@@ -1,5 +1,3 @@
-//blank
-
 #include <string>
 #include <vector>
 
