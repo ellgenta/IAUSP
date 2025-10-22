@@ -7,17 +7,28 @@ using stemmed_doc = trie;
 
 class map {
 private:
-    std::unordered_map<doc_name, stemmed_doc> _map;
+    std::unordered_map<doc_name, stemmed_doc*> _map;
 public:
+    map() = default;
+
+    ~map() {
+        for(auto _it : _map) {
+            _it.second->clear();
+            delete _it.second;
+            _it.second = nullptr;
+        }
+    }
+
     void insert(doc_name& name, std::vector<std::string>& stems) {
-        _map.insert({name, (stemmed_doc)stems});
+        stemmed_doc* _d = new stemmed_doc(stems);
+        _map.insert({name, _d});
     }
 
     size_t get_index(std::string& stem) {
         size_t indx = 0;
 
         for(auto _p : _map) 
-            indx += _p.second.count(stem);
+            indx += _p.second->count(stem);
 
         return indx;
     }
@@ -26,7 +37,7 @@ public:
         size_t indx = 0;
 
         for(auto _p : _map) {
-            indx += _p.second.count(query);
+            indx += _p.second->count(query);
         } 
 
         return indx;
@@ -36,7 +47,7 @@ public:
         std::vector<doc_name> keys;
 
         for(auto _p : _map) {
-            if(_p.second.contains(stem) == true)
+            if(_p.second->contains(stem) == true)
                 keys.push_back(_p.first);
         }
 
@@ -82,7 +93,7 @@ int main(void)
     std::vector<doc_name> keys = test_map.get_names(entry_Jacque);
     
     assert(keys.size() == 2);
-    assert(keys[0] == doc_names[1] || keys[1] == doc_names[2] && keys[0] == doc_names[1] || keys[1] == doc_names[2]);
+    assert(keys[0] == "bio" || keys[1] == "bio" && keys[0] == "genius" || keys[1] == "genius");
  
     return 0;
 }
