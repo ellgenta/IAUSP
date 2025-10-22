@@ -1,3 +1,5 @@
+//blank
+
 #include <string>
 #include <vector>
 
@@ -104,6 +106,7 @@ private:
         }
 
         delete root;
+        root = nullptr;
     }
 public:
     trie() { root = new trie_node; }
@@ -115,7 +118,7 @@ public:
             insert(s);
     }
 
-    ~trie() { _clear(root); } 
+    ~trie() { clear(); } 
     
     trie_node* find(std::string& stem) { return _find(root, stem, 0); }
     
