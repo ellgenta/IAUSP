@@ -1,5 +1,5 @@
 #include <iostream>
-#include "trie.cpp"
+#include "Trie.cpp"
 #include <unordered_map> 
 
 using doc_name = std::string;
@@ -58,6 +58,7 @@ public:
 map test_map;
 
 #define TESTS
+#undef TESTS
 
 #ifdef TESTS
 

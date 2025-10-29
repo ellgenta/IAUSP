@@ -1,20 +1,9 @@
-// search_engine_interactive_safe.cpp
-// Interactive TF-IDF search engine (C++17) with robust filesystem/error handling
-// For Visual Studio: set Project -> C/C++ -> Language -> C++ Language Standard = /std:c++17
-// Build & run inside Visual Studio (or with cl /std:c++17).
-
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <exception>
 #include <fstream>
 #include <iostream>
-#include <iterator>
-#include <map>
-#include <string>
-#include <system_error>
-#include <unordered_map>
-#include <vector>
+#include "Custom_map.cpp"
 
 #if defined(__has_include)
 #if __has_include(<filesystem>)
@@ -31,7 +20,6 @@ namespace fs = std::experimental::filesystem;
 namespace fs = std::filesystem;
 #endif
 
-// ---------------------- Porter stemmer (adapted from your implementation) ----------------------
 struct Porter {
     static bool is_letter(char ch) {
         return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
@@ -79,19 +67,6 @@ struct Porter {
         if (w.empty()) {
             return 0;
         }
-        /*
-        std::string pat; 
-        pat.reserve(w.size()); //резервирует w.size() памяти
-        for (int i = 0; i < w.size(); ++i) {
-            pat.push_back(is_vowel(w, i) ? 'V' : 'C'); //добавляем V - если буква гласная, C - иначе
-        }
-
-        for (int i = 0; i + 1 < pat.size(); ++i) {
-            if (pat[i] == 'V' && pat[i + 1] == 'C') {
-                ++m;
-            } 
-        } 
-        */
 
         int m = 0;
         for (int i = 0; i + 1 < w.size(); ++i) {
@@ -123,7 +98,9 @@ struct Porter {
         bool v = is_vowel(w, n - 2) == true;
         bool c_2 = !is_vowel(w, n - 1) == false;
         //char last = w[n - 1];
-        if (c_1 && v && c_2 && w[n - 1] != 'w' && w[n - 1] != 'x' && w[n - 1] != 'y') return true;
+        if (c_1 && v && c_2 && w[n - 1] != 'w' && w[n - 1] != 'x' && w[n - 1] != 'y') {
+            return true;
+        }
         //пока непонятно, причем тут w и x
         return false;
     }
@@ -150,11 +127,10 @@ struct Porter {
         }
         else if (ends_with(word, "ies")) {
             word = remove_suffix(word, 3) + "i"; //удаляем ies и добавляем... i?
-            //word = remove_suffix(word, 2); возможное решение
+            //word = remove_suffix(word, 2); //возможное решение
         }
         else if (ends_with(word, "s") && word.size() >= 2 && word[word.size() - 2] != 's') {
-            word = remove_suffix(word, 1);
-            //word.resize(word.size() - 1); возможное решение
+            word.resize(word.size() - 1); //возможное решение
         }
 
         bool didStep1b = false; //какой степ?
