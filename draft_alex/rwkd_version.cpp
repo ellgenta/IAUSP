@@ -36,87 +36,164 @@ struct Porter {
     static bool is_letter(char ch) {
         return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
     }
+
     static std::string preprocess(const std::string& s) {
-        std::string out; out.reserve(s.size());
-        for (char ch : s) if (is_letter(ch)) out.push_back(std::tolower((unsigned char)ch));
+        std::string out; 
+        out.reserve(s.size());
+        for (char ch : s) {
+            if (is_letter(ch)) {
+                out.push_back(std::tolower((unsigned char)ch));
+            }
+        }
         return out;
     }
+
     static bool is_vowel(const std::string& w, int i) {
         char ch = w[i];
-        if (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u') return true;
+
+        if (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u') {
+            return true;
+        }
+
         if (ch == 'y') {
-            if (i == 0) return false;
+            if (i == 0) {
+                return false; //обычно в начале слова Y не считается гласной
+            }
             return !is_vowel(w, i - 1);
         }
+
         return false;
     }
+
     static bool contains_vowel(const std::string& w) {
-        for (int i = 0; i < (int)w.size(); ++i) if (is_vowel(w, i)) return true;
+        for (int i = 0; i < w.size(); ++i) {
+            if (is_vowel(w, i) == true) {
+                return true;
+            }
+        }
+
         return false;
     }
-    static int measure(const std::string& w) {
-        if (w.empty()) return 0;
-        std::string pat; pat.reserve(w.size());
-        for (int i = 0; i < (int)w.size(); ++i) pat.push_back(is_vowel(w, i) ? 'V' : 'C');
+
+    static int measure(const std::string& w) { //возвращает количество комбинаций VC
+        if (w.empty()) {
+            return 0;
+        }
+        /*
+        std::string pat; 
+        pat.reserve(w.size()); //резервирует w.size() памяти
+        for (int i = 0; i < w.size(); ++i) {
+            pat.push_back(is_vowel(w, i) ? 'V' : 'C'); //добавляем V - если буква гласная, C - иначе
+        }
+
+        for (int i = 0; i + 1 < pat.size(); ++i) {
+            if (pat[i] == 'V' && pat[i + 1] == 'C') {
+                ++m;
+            } 
+        } 
+        */
+
         int m = 0;
-        for (int i = 0; i + 1 < (int)pat.size(); ++i) if (pat[i] == 'V' && pat[i + 1] == 'C') ++m;
+        for (int i = 0; i + 1 < w.size(); ++i) {
+            if (w[i] == 'V' && w[i + 1] == 'C') {
+                m += 1;
+            } 
+        }
+
         return m;
     }
+
     static bool ends_with_double_consonant(const std::string& w) {
-        int n = (int)w.size();
-        if (n < 2) return false;
-        char a = w[n - 1], b = w[n - 2];
-        if (a != b) return false;
-        return !is_vowel(w, n - 1);
+        int n = w.size();
+        if (n < 2) {
+            return false;
+        } 
+        if (w[n - 1] != w[n - 2]) { //двойные согласные в конце слова обязательно одинаковые
+            return false;
+        }
+        return is_vowel(w, n - 1) == false; //проверяем, что это были НЕ две гласных
     }
-    static bool cvc_ending(const std::string& w) {
-        int n = (int)w.size();
-        if (n < 3) return false;
-        bool c1 = !is_vowel(w, n - 3);
-        bool v = is_vowel(w, n - 2);
-        bool c2 = !is_vowel(w, n - 1);
-        char last = w[n - 1];
-        if (c1 && v && c2 && last != 'w' && last != 'x' && last != 'y') return true;
+
+    static bool cvc_ending(const std::string& w) { //концовка "согласная-гласная-согласная"
+        int n = w.size();
+        if (n < 3) {
+            return false;
+        }
+        bool c_1 = is_vowel(w, n - 3) == false;
+        bool v = is_vowel(w, n - 2) == true;
+        bool c_2 = !is_vowel(w, n - 1) == false;
+        //char last = w[n - 1];
+        if (c_1 && v && c_2 && w[n - 1] != 'w' && w[n - 1] != 'x' && w[n - 1] != 'y') return true;
+        //пока непонятно, причем тут w и x
         return false;
     }
+
     static bool ends_with(const std::string& w, const std::string& suf) {
-        if ((int)w.size() < (int)suf.size()) return false;
+        if (w.size() < suf.size()) {
+            return false;
+        }
         return w.compare(w.size() - suf.size(), suf.size(), suf) == 0;
     }
+    
     static std::string remove_suffix(const std::string& word, int len) {
-        return word.substr(0, word.size() - len);
+        return word.substr(0, word.size() - len); //отделяем подстроку в строке от суффикса
     }
 
     std::string stem(const std::string& word_in) {
-        std::string word = preprocess(word_in);
-        if ((int)word.size() <= 2) return word;
+        std::string word = preprocess(word_in); //пушит слово в отдельную строку
+        if (word.size() <= 2) {
+            return word;
+        } 
 
-        if (ends_with(word, "sses")) word = remove_suffix(word, 2);
-        else if (ends_with(word, "ies")) word = remove_suffix(word, 3) + "i";
-        else if (ends_with(word, "s")) {
-            if (word.size() >= 2 && word[word.size() - 2] != 's') word = remove_suffix(word, 1);
+        if (ends_with(word, "sses")) {
+            word = remove_suffix(word, 2); //убираем суффикс (судя по всему, -es)
+        }
+        else if (ends_with(word, "ies")) {
+            word = remove_suffix(word, 3) + "i"; //удаляем ies и добавляем... i?
+            //word = remove_suffix(word, 2); возможное решение
+        }
+        else if (ends_with(word, "s") && word.size() >= 2 && word[word.size() - 2] != 's') {
+            word = remove_suffix(word, 1);
+            //word.resize(word.size() - 1); возможное решение
         }
 
-        bool didStep1b = false;
+        bool didStep1b = false; //какой степ?
         if (ends_with(word, "ed")) {
             std::string base = remove_suffix(word, 2);
-            if (contains_vowel(base)) { word = base; didStep1b = true; }
+            if (contains_vowel(base) == true) {
+                word = base; 
+                didStep1b = true; 
+            }
         }
         else if (ends_with(word, "ing")) {
             std::string base = remove_suffix(word, 3);
-            if (contains_vowel(base)) { word = base; didStep1b = true; }
-        }
-        if (didStep1b) {
-            if (ends_with(word, "at") || ends_with(word, "bl") || ends_with(word, "iz")) word.push_back('e');
-            else if (ends_with_double_consonant(word)) {
-                char last = word.back();
-                if (last != 'l' && last != 's' && last != 'z') word.pop_back();
+            if (contains_vowel(base)) { 
+                word = base; 
+                didStep1b = true; 
             }
-            else if (measure(word) == 1 && cvc_ending(word)) word.push_back('e');
         }
-        if (ends_with(word, "y")) {
-            if (word.size() >= 2 && is_vowel(word, (int)word.size() - 2)) word.back() = 'i';
+
+        if (didStep1b == true) {
+            if (ends_with(word, "at") || ends_with(word, "bl") || ends_with(word, "iz")) {
+                word.push_back('e');
+            }
+            else if (ends_with_double_consonant(word) == true) {
+                char last = word.back();
+                if (last != 'l' && last != 's' && last != 'z') {
+                    word.pop_back();
+                } 
+            }
+            else if (measure(word) == 1 && cvc_ending(word) == true) {
+                word.push_back('e');
+            }
         }
+
+        if (ends_with(word, "y") == true) {
+            if (word.size() >= 2 && is_vowel(word, word.size() - 2) == true) {
+                word.back() = 'i';
+            } 
+        }
+
         const std::vector<std::pair<std::string, std::string>> step2 = {
             {"ational","ate"},{"tional","tion"},{"enci","ence"},{"anci","ance"},
             {"izer","ize"},{"abli","able"},{"alli","al"},{"entli","ent"},
@@ -124,50 +201,70 @@ struct Porter {
             {"ator","ate"},{"alism","al"},{"iveness","ive"},{"fulness","ful"},
             {"ousness","ous"}
         };
+
         for (auto& p : step2) {
-            if (ends_with(word, p.first)) {
-                std::string stem = remove_suffix(word, (int)p.first.size());
-                if (measure(stem) > 0) { word = stem + p.second; }
+            if (ends_with(word, p.first) == true) {
+                std::string stem = remove_suffix(word, p.first.size()); //удалили суффикс
+                if (measure(stem) > 0) {  //если есть хоть одна комбинация VC, то добавляем конец из пары
+                    word = stem + p.second; 
+                }
                 break;
             }
         }
+
         const std::vector<std::pair<std::string, std::string>> step3 = {
             {"icate","ic"},{"ative",""},{"alize","al"},{"iciti","ic"},
             {"ical","ic"},{"ful",""},{"ness",""}
         };
+
         for (auto& p : step3) {
-            if (ends_with(word, p.first)) {
-                std::string stem = remove_suffix(word, (int)p.first.size());
-                if (measure(stem) > 0) { word = stem + p.second; }
+            if (ends_with(word, p.first) == true) {
+                std::string stem = remove_suffix(word, p.first.size());
+                if (measure(stem) > 0) { 
+                    word = stem + p.second; //логика точь-в-точь как в цикле выше (может стоит объединить в один?)
+                }
                 break;
             }
         }
+
         const std::vector<std::string> step4 = {
             "al","ance","ence","er","ic","able","ible","ant","ement",
             "ment","ent","ism","ate","iti","ous","ive","ize"
         };
+
         bool removed4 = false;
         for (auto& suf : step4) {
-            if (ends_with(word, suf)) {
-                std::string stem = remove_suffix(word, (int)suf.size());
-                if (measure(stem) > 1) { word = stem; }
+            if (ends_with(word, suf) == true) {
+                std::string stem = remove_suffix(word, suf.size());
+                if (measure(stem) > 1) { 
+                    word = stem; 
+                }
                 removed4 = true;
                 break;
             }
         }
-        if (!removed4 && ends_with(word, "ion")) {
+
+        if (removed4 == false && ends_with(word, "ion") == true) {
             std::string stem = remove_suffix(word, 3);
-            if (!stem.empty()) {
+            if (stem.empty() == false) {
                 char ch = stem.back();
-                if ((ch == 's' || ch == 't') && measure(stem) > 1) word = stem;
+                if ((ch == 's' || ch == 't') && measure(stem) > 1) {  
+                    word = stem;
+                }
             }
         }
+
         if (ends_with(word, "e")) {
             std::string stem = remove_suffix(word, 1);
             int m = measure(stem);
-            if (m > 1 || (m == 1 && !cvc_ending(stem))) word = stem;
+            if (m > 1 || (m == 1 && !cvc_ending(stem))) {
+                word = stem;
+            }
         }
-        if (ends_with(word, "ll") && measure(remove_suffix(word, 1)) > 1) word.pop_back();
+
+        if (ends_with(word, "ll") && measure(remove_suffix(word, 1)) > 1) {
+            word.pop_back();
+        }
 
         return word;
     }
