@@ -246,25 +246,35 @@ struct Porter {
     }
 };
 
-// ---------------------- Tokenize + stem ----------------------
+//static trie tokenize_and_stem(const std::string& text, Porter& ps) { 
 static std::vector<std::string> tokenize_and_stem(const std::string& text, Porter& ps) {
     std::vector<std::string> out;
+    //trie __out; для трая
     std::string cur;
     out.reserve(128);
     for (char ch : text) {
-        if (std::isalpha((unsigned char)ch) || std::isdigit((unsigned char)ch)) cur.push_back(std::tolower((unsigned char)ch));
+        if (std::isalpha((unsigned char)ch) || std::isdigit((unsigned char)ch)) {
+            cur.push_back(std::tolower((unsigned char)ch));
+        }
         else {
             if (!cur.empty()) {
                 std::string stem = ps.stem(cur);
-                if (!stem.empty()) out.push_back(std::move(stem));
+                if (!stem.empty()) {
+                    out.push_back(std::move(stem));
+                    //__out.insert(stem); для трая
+                }
                 cur.clear();
             }
         }
     }
     if (!cur.empty()) {
         std::string stem = ps.stem(cur);
-        if (!stem.empty()) out.push_back(std::move(stem));
+        if (!stem.empty()) {
+            out.push_back(std::move(stem));
+            //__out.insert(stem);
+        } 
     }
+    //return __out;
     return out;
 }
 
@@ -351,6 +361,7 @@ static std::string read_file_all(const fs::path& p) {
     return s;
 }
 
+//static std::string make_snippet(const std::string& text, const std::vector<std::string>& tokens_stemmed) {
 static std::string make_snippet(const std::string& text, const std::vector<std::string>& tokens_stemmed) {
     std::string lower = text;
     std::transform(lower.begin(), lower.end(), lower.begin(), [](unsigned char c) { return std::tolower(c); });
