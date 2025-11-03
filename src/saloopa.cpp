@@ -15,40 +15,7 @@ static std::string read_file(const fs::path& p) {
 	return s;
 }
 
-struct SnippetGenerator {
-	static constexpr size_t CONTEXT_BEFORE = 40;
-	static constexpr size_t CONTEXT_AFTER = 120;
-	static constexpr size_t MAX_SNIPPET_LEN = CONTEXT_BEFORE + CONTEXT_AFTER;
-
-	static std::string make_snippet(const doc_t& doc,
-		const std::vector<std::string>& query_tokens) {
-		const std::filesystem::path path = doc.get_path();
-		std::string text = read_file(path);
-		if (text.empty() || query_tokens.empty()) {
-			return truncate_text(text, MAX_SNIPPET_LEN);
-		}
-
-		// Создаем стеммированные версии терминов для поиска
-		std::unordered_set<std::string> search_terms;
-		for (const auto& token : query_tokens) {
-			std::string stemmed = porter::get_stem(token);
-			if (!stemmed.empty()) {
-				search_terms.insert(stemmed);
-			}
-			// Также добавляем оригинальные токены на случай, если они уже стеммированные
-			search_terms.insert(token);
-		}
-
-		std::string text_lower = to_lower_case(text);
-		size_t best_position = find_first_match(text_lower, search_terms);
-
-		if (best_position == std::string::npos) {
-			return truncate_text(text, MAX_SNIPPET_LEN);
-		}
-
-		return extract_context_with_highlight(text, text_lower, best_position, search_terms);
-	}
-
+class SnippetGenerator {
 private:
 	static std::string to_lower_case(const std::string& str) {
 		std::string result = str;
@@ -142,6 +109,39 @@ private:
 			return text;
 		}
 		return text.substr(0, max_length) + "...";
+	}
+public:
+	static constexpr size_t CONTEXT_BEFORE = 40;
+	static constexpr size_t CONTEXT_AFTER = 120;
+	static constexpr size_t MAX_SNIPPET_LEN = CONTEXT_BEFORE + CONTEXT_AFTER;
+
+	static std::string make_snippet(const doc_t& doc,
+		const std::vector<std::string>& query_tokens) {
+		const std::filesystem::path path = doc.get_path();
+		std::string text = read_file(path);
+		if (text.empty() || query_tokens.empty()) {
+			return truncate_text(text, MAX_SNIPPET_LEN);
+		}
+
+		// Создаем стеммированные версии терминов для поиска
+		std::unordered_set<std::string> search_terms;
+		for (const auto& token : query_tokens) {
+			std::string stemmed = porter::get_stem(token);
+			if (!stemmed.empty()) {
+				search_terms.insert(stemmed);
+			}
+			// Также добавляем оригинальные токены на случай, если они уже стеммированные
+			search_terms.insert(token);
+		}
+
+		std::string text_lower = to_lower_case(text);
+		size_t best_position = find_first_match(text_lower, search_terms);
+
+		if (best_position == std::string::npos) {
+			return truncate_text(text, MAX_SNIPPET_LEN);
+		}
+
+		return extract_context_with_highlight(text, text_lower, best_position, search_terms);
 	}
 };
 
