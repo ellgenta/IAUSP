@@ -3,13 +3,31 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
-#include <cctype>
-#include <iterator>
 #include <unordered_map>
 #include <unordered_set>
 #include <fstream>
 #include <filesystem>
-#include <system_error>
+#include "trie.cpp"
+
+using suff_table_t = std::vector<std::pair<std::string, std::string>>;
+
+const suff_table_t shrink_table_1 = {
+	{"ational","ate"},{"tional","tion"},{"enci","ence"},{"anci","ance"},
+	{"izer","ize"},{"abli","able"},{"alli","al"},{"entli","ent"},
+	{"eli","e"},{"ousli","ous"},{"ization","ize"},{"ation","ate"},
+	{"ator","ate"},{"alism","al"},{"iveness","ive"},{"fulness","ful"},
+	{"ousness","ous"}
+};
+
+const suff_table_t shrink_table_2 = {
+	{"icate","ic"},{"ative",""},{"alize","al"},{"iciti","ic"},
+	{"ical","ic"},{"ful",""},{"ness",""}
+};
+
+const std::vector<std::string> suff_table = {
+	"al","ance","ence","er","ic","able","ible","ant","ement",
+	"ment","ent","ism","ate","iti","ous","ive","ize"
+};
 
 namespace fs = std::filesystem;
 
@@ -198,163 +216,186 @@ private:
 		return std::vector<ScorePair>(scores.begin(), scores.begin() + top_results_count);
 	}
 };
-struct Porter {
-	static bool is_letter(char ch) {
-		return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
-	}
-	static std::string get_only_letters(const std::string& s) {
+
+namespace porter 
+{
+	std::string get_only_letters(const std::string& s) {
 		std::string out; 
 		out.reserve(s.size());
-		for (char ch : s) 
-			if (is_letter(ch)) 
+		for (char ch : s) {
+			if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
 				out.push_back(std::tolower((unsigned char)ch));
+			}
+		}
 		return out;
 	}
-	static bool is_vowel(const std::string& word, int i) {
+
+	bool is_vowel(const std::string& word, int i) {
 		char ch = word[i];
-		if (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u') return true;
+		if (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u') {
+			return true;
+		} 
 		if (ch == 'y') {
 			if (i == 0) return false;
 			return !is_vowel(word, i - 1);
 		}
 		return false;
 	}
-	static bool contains_vowel(const std::string& word) {
-		for (int i = 0; i < (int)word.size(); ++i) 
-			if (is_vowel(word, i)) 
-				return true;
+
+	bool contains_vowel(const std::string& word) {
+		for (int i = 0; i < (int)word.size(); ++i) {
+			if (is_vowel(word, i)) return true;
+		}
 		return false;
 	}
-	static int measure(const std::string& word) {
-		int vc_transitions = 0;
-		bool previous_was_vowel = false;
+
+	int vc_count(const std::string& word) {
+		int vc_count = 0;
+		bool prev_was_vowel = false;
 		for (int i = 0; i < (int)word.size(); ++i) {
-			bool current_is_vowel = is_vowel(word, i);
-			if (previous_was_vowel && !current_is_vowel) 
-				++vc_transitions;
-			previous_was_vowel = current_is_vowel;
+			bool curr_is_vowel = is_vowel(word, i);
+			if (prev_was_vowel && !curr_is_vowel) {
+				++vc_count;
+			} 
+			prev_was_vowel = curr_is_vowel;
 		}
-		return vc_transitions;
+		return vc_count;
 	}
-	static bool ends_with_double_consonant(const std::string& word) {
+
+	bool cc_ending(const std::string& word) {
 		int word_size = (int)word.size();
-		if (word_size < 2) return false;
-		char current = word[word_size - 1], previous = word[word_size - 2];
-		if (current != previous) return false;
+		if (word_size < 2) {
+			return false;
+		}
+		if (word[word_size - 1] != word[word_size - 2]) {
+			return false;
+		} 
 		return !is_vowel(word, word_size - 1);
 	}
-	static bool cvc_ending(const std::string& word) {
+
+	bool cvc_ending(const std::string& word) {
 		int word_size = (int)word.size();
-		if (word_size < 3) return false;
-		bool c1 = !is_vowel(word, word_size - 3);
-		bool v = is_vowel(word, word_size - 2);
-		bool c2 = !is_vowel(word, word_size - 1);
+		if (word_size < 3) {
+			return false;
+		}
+		bool front_c = !is_vowel(word, word_size - 3);
+		bool middle_v = is_vowel(word, word_size - 2);
+		bool back_c = !is_vowel(word, word_size - 1);
 		char last = word[word_size - 1];
-		if (c1 && v && c2 && last != 'w' && last != 'x' && last != 'y') return true;
+		if (front_c && middle_v && back_c && last != 'w' && last != 'x' && last != 'y') {
+			return true;
+		}
 		return false;
 	}
-	static bool ends_with(const std::string& word, const std::string& suffix) {
-		if ((int)word.size() < (int)suffix.size()) return false;
-		return word.compare(word.size() - suffix.size(), suffix.size(), suffix) == 0;
+
+	bool suff_ending(const std::string& word, const std::string& suff) {
+		if ((int)word.size() < (int)suff.size()) {
+			return false;
+		}
+		return word.compare(word.size() - suff.size(), suff.size(), suff) == 0;
 	}
-	static std::string remove_suffix(const std::string& word, int len) {
+
+	std::string erase_suffix(const std::string& word, int len) {
 		return word.substr(0, word.size() - len);
 	}
-	static std::string stem(const std::string& word_in) {
-		std::string word = get_only_letters(word_in);
-		if ((int)word.size() <= 2) return word;
 
-		if (ends_with(word, "sses")) 
-			word = remove_suffix(word, 2);
-		else if (ends_with(word, "ies")) 
-			word = remove_suffix(word, 3) + "i";
-		else if (ends_with(word, "s")) 
-			if (word.size() >= 2 && word[word.size() - 2] != 's') 
-				word = remove_suffix(word, 1);
+	void shrink_suff(std::string& word, const suff_table_t& table) {
+		for (auto& p : table) {
+			if (suff_ending(word, p.first)) {
+				std::string stem = erase_suffix(word, (int)p.first.size());
+				if (vc_count(stem) > 0)  
+					word = stem + p.second; 
+				return;
+			}
+		}
+	}
 
-		bool removed_ed_or_ing = false;
-		if (ends_with(word, "ed")) {
-			std::string base = remove_suffix(word, 2);
-			if (contains_vowel(base)) { word = base; removed_ed_or_ing = true; }
+	void modify_suff(std::string& word) {
+		shrink_suff(word, shrink_table_1);
+		shrink_suff(word, shrink_table_2);
+	}
+
+	std::string get_stem(const std::string& input) {
+		std::string word = get_only_letters(input);
+		if ((int)word.size() <= 2) 
+			return word;
+
+		if (suff_ending(word, "sses")) 
+			word = erase_suffix(word, 2);
+		else if (suff_ending(word, "ies")) 
+			word = erase_suffix(word, 3) + "i";
+		else if (suff_ending(word, "s") && word.size() >= 2 && word[word.size() - 2] != 's')  {
+			word = erase_suffix(word, 1);
 		}
-		else if (ends_with(word, "ing")) {
-			std::string base = remove_suffix(word, 3);
-			if (contains_vowel(base)) { word = base; removed_ed_or_ing = true; }
+
+		int end_length = 0; 
+		if (suff_ending(word, "ed")) 
+			end_length = 2;
+		else if (suff_ending(word, "ing")) 
+			end_length = 3;
+
+		std::string base = erase_suffix(word, end_length);
+		if (contains_vowel(base)) { 
+			word = base; 
 		}
-		if (removed_ed_or_ing) {
-			if (ends_with(word, "at") || ends_with(word, "bl") || ends_with(word, "iz")) word.push_back('e');
-			else if (ends_with_double_consonant(word)) {
+		if (end_length != 0) {
+			if (suff_ending(word, "at") || suff_ending(word, "bl") || suff_ending(word, "iz")) 
+				word.push_back('e');
+			else if (cc_ending(word)) {
 				char last = word.back();
-				if (last != 'l' && last != 's' && last != 'z') word.pop_back();
+				if (last != 'l' && last != 's' && last != 'z') 
+					word.pop_back();
 			}
-			else if (measure(word) == 1 && cvc_ending(word)) word.push_back('e');
+			else if (vc_count(word) == 1 && cvc_ending(word)) 
+				word.push_back('e');
 		}
-		if (ends_with(word, "y")) {
-			if (word.size() >= 2 && is_vowel(word, (int)word.size() - 2)) word.back() = 'i';
+		if (suff_ending(word, "y")) {
+			if (word.size() >= 2 && is_vowel(word, (int)word.size() - 2)) 
+			word.back() = 'i';
 		}
-		const std::vector<std::pair<std::string, std::string>> suffix_replacements_1 = {
-			{"ational","ate"},{"tional","tion"},{"enci","ence"},{"anci","ance"},
-			{"izer","ize"},{"abli","able"},{"alli","al"},{"entli","ent"},
-			{"eli","e"},{"ousli","ous"},{"ization","ize"},{"ation","ate"},
-			{"ator","ate"},{"alism","al"},{"iveness","ive"},{"fulness","ful"},
-			{"ousness","ous"}
-		};
-		for (auto& p : suffix_replacements_1) {
-			if (ends_with(word, p.first)) {
-				std::string stem = remove_suffix(word, (int)p.first.size());
-				if (measure(stem) > 0) { word = stem + p.second; }
+		
+		modify_suff(word);
+
+		size_t match_at = -1;
+		for (size_t i = 0; i < suff_table.size(); i++) {
+			if (suff_ending(word, suff_table[i])) {
+				match_at = i;
 				break;
 			}
 		}
-		const std::vector<std::pair<std::string, std::string>> suffix_replacements_2 = {
-			{"icate","ic"},{"ative",""},{"alize","al"},{"iciti","ic"},
-			{"ical","ic"},{"ful",""},{"ness",""}
-		};
-		for (auto& p : suffix_replacements_2) {
-			if (ends_with(word, p.first)) {
-				std::string stem = remove_suffix(word, (int)p.first.size());
-				if (measure(stem) > 0) { word = stem + p.second; }
-				break;
-			}
+		if (match_at != -1) {
+			std::string stem = erase_suffix(word, (int)suff_table[match_at].size());
+			if (vc_count(stem) > 1) 
+				word = stem; 
 		}
-		const std::vector<std::string> step4 = {
-			"al","ance","ence","er","ic","able","ible","ant","ement",
-			"ment","ent","ism","ate","iti","ous","ive","ize"
-		};
-		bool removed4 = false;
-		for (auto& suf : step4) {
-			if (ends_with(word, suf)) {
-				std::string stem = remove_suffix(word, (int)suf.size());
-				if (measure(stem) > 1) { word = stem; }
-				removed4 = true;
-				break;
-			}
-		}
-		if (!removed4 && ends_with(word, "ion")) {
-			std::string stem = remove_suffix(word, 3);
+		else if (suff_ending(word, "ion")) {
+			std::string stem = erase_suffix(word, 3);
 			if (!stem.empty()) {
 				char ch = stem.back();
-				if ((ch == 's' || ch == 't') && measure(stem) > 1) word = stem;
+				if ((ch == 's' || ch == 't') && vc_count(stem) > 1) 
+					word = stem;
 			}
 		}
-		if (ends_with(word, "e")) {
-			std::string stem = remove_suffix(word, 1);
-			int m = measure(stem);
-			if (m > 1 || (m == 1 && !cvc_ending(stem))) word = stem;
+		if (suff_ending(word, "e")) {
+			std::string stem = erase_suffix(word, 1);
+			int vc_cnt = vc_count(stem);
+			if (vc_cnt > 1 || (vc_cnt == 1 && !cvc_ending(stem))) 
+				word = stem;
 		}
-		if (ends_with(word, "ll") && measure(remove_suffix(word, 1)) > 1) word.pop_back();
+		if (suff_ending(word, "ll") && vc_count(erase_suffix(word, 1)) > 1) 
+			word.pop_back();
 
 		return word;
 	}
 };
+
 struct SnippetGenerator {
 	static constexpr size_t CONTEXT_BEFORE = 40;
 	static constexpr size_t CONTEXT_AFTER = 120;
 	static constexpr size_t MAX_SNIPPET_LEN = CONTEXT_BEFORE + CONTEXT_AFTER;
 
 	static std::string make_snippet(const std::string& text,
-		const std::vector<std::string>& query_tokens,
-		Porter& porter) {
+		const std::vector<std::string>& query_tokens) {
 		if (text.empty() || query_tokens.empty()) {
 			return truncate_text(text, MAX_SNIPPET_LEN);
 		}
@@ -362,7 +403,7 @@ struct SnippetGenerator {
 		// Создаем стеммированные версии терминов для поиска
 		std::unordered_set<std::string> search_terms;
 		for (const auto& token : query_tokens) {
-			std::string stemmed = porter.stem(token);
+			std::string stemmed = porter::get_stem(token);
 			if (!stemmed.empty()) {
 				search_terms.insert(stemmed);
 			}
@@ -496,18 +537,18 @@ static std::vector<std::string> tokenize(const std::string& text) {
 		tokens.push_back(std::move(cur));
 	return tokens;
 }
-static std::vector<std::string> stem_tokens(const std::vector<std::string>& tokens, Porter& ps) {
+static std::vector<std::string> stem_tokens(const std::vector<std::string>& tokens) {
 	std::vector<std::string> out;
 	out.reserve(tokens.size());
 	for (auto const& t : tokens) {
-		std::string s = Porter::stem(t);
+		std::string s = porter::get_stem(t);
 		if (!s.empty()) out.push_back(std::move(s));
 	}
 	return out;
 }
-static std::vector<std::string> tokenize_and_stem(const std::string& text, Porter& ps) {
+static std::vector<std::string> tokenize_and_stem(const std::string& text) {
 	auto toks = tokenize(text);
-	return stem_tokens(toks, ps);
+	return stem_tokens(toks);
 }
 static std::string read_file(const fs::path& p) {
 	std::ifstream in(p, std::ios::binary);
@@ -572,7 +613,6 @@ int main() {
 
 	std::cout << "Found " << found.size() << " .txt files. Indexing...\n";
 
-	Porter porter;
 	std::vector<std::string> file_paths; 
 	std::vector<std::string> contents;
 	std::vector<SearchRanker::TermFrequencyMap> docs_tf;
@@ -592,7 +632,7 @@ int main() {
 					continue;
 				}
 			}
-			auto tokens = tokenize_and_stem(text, porter);
+			auto tokens = tokenize_and_stem(text);
 			SearchRanker::TermFrequencyMap tfmap;
 			for (auto& t : tokens) tfmap[t] += 1;
 			file_paths.push_back(fp.string());
@@ -624,7 +664,7 @@ int main() {
 		std::cout << "Query> ";
 		if (!std::getline(std::cin, user_input)) break;
 		if (user_input.empty()) continue;
-		auto qtokens = tokenize_and_stem(user_input, porter);
+		auto qtokens = tokenize_and_stem(user_input);
 		if (qtokens.empty()) { std::cout << "(no valid tokens)\n"; continue; }
 
 		auto scores = ranker.rank_tokens(qtokens, shown_results_count);
@@ -638,7 +678,7 @@ int main() {
 			if (docidx >= file_paths.size()) continue;
 			std::cout << (r + 1) << ". [" << score << "] " << file_paths[docidx] << "\n";
 			SnippetGenerator generator;
-			std::string snippet = SnippetGenerator::make_snippet(contents[docidx], qtokens, porter);
+			std::string snippet = SnippetGenerator::make_snippet(contents[docidx], qtokens);
 			std::cout << "<" << (snippet.size() > 150 ? snippet.substr(0, 150) + ">" : snippet) << "\n";
 		}
 	}
