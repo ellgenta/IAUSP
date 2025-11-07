@@ -21,10 +21,10 @@ const std::vector<std::string> suff_table = {
 	"ment","ent","ism","ate","iti","ous","ive","ize"
 };
 
-namespace porter 
+namespace porter
 {
 	std::string get_only_letters(const std::string& s) {
-		std::string out; 
+		std::string out;
 		out.reserve(s.size());
 		for (char ch : s) {
 			if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
@@ -38,7 +38,7 @@ namespace porter
 		char ch = word[i];
 		if (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u') {
 			return true;
-		} 
+		}
 		if (ch == 'y') {
 			if (i == 0) return false;
 			return !is_vowel(word, i - 1);
@@ -60,7 +60,7 @@ namespace porter
 			bool curr_is_vowel = is_vowel(word, i);
 			if (prev_was_vowel && !curr_is_vowel) {
 				++vc_count;
-			} 
+			}
 			prev_was_vowel = curr_is_vowel;
 		}
 		return vc_count;
@@ -68,34 +68,24 @@ namespace porter
 
 	bool cc_ending(const std::string& word) {
 		int word_size = (int)word.size();
-		if (word_size < 2) {
-			return false;
-		}
-		if (word[word_size - 1] != word[word_size - 2]) {
-			return false;
-		} 
+		if (word_size < 2) return false;
+		if (word[word_size - 1] != word[word_size - 2]) return false;
 		return !is_vowel(word, word_size - 1);
 	}
 
 	bool cvc_ending(const std::string& word) {
-		int word_size = (int)word.size();
-		if (word_size < 3) {
-			return false;
-		}
+		size_t word_size = word.size();
+		if (word_size < 3) return false;
 		bool front_c = !is_vowel(word, word_size - 3);
 		bool middle_v = is_vowel(word, word_size - 2);
 		bool back_c = !is_vowel(word, word_size - 1);
 		char last = word[word_size - 1];
-		if (front_c && middle_v && back_c && last != 'w' && last != 'x' && last != 'y') {
-			return true;
-		}
+		if (front_c && middle_v && back_c && last != 'w' && last != 'x' && last != 'y') return true;
 		return false;
 	}
 
 	bool suff_ending(const std::string& word, const std::string& suff) {
-		if ((int)word.size() < (int)suff.size()) {
-			return false;
-		}
+		if ((int)word.size() < (int)suff.size()) return false;
 		return word.compare(word.size() - suff.size(), suff.size(), suff) == 0;
 	}
 
@@ -107,8 +97,8 @@ namespace porter
 		for (auto& p : table) {
 			if (suff_ending(word, p.first)) {
 				std::string stem = erase_suffix(word, (int)p.first.size());
-				if (vc_count(stem) > 0)  
-					word = stem + p.second; 
+				if (vc_count(stem) > 0)
+					word = stem + p.second;
 				return;
 			}
 		}
@@ -121,43 +111,42 @@ namespace porter
 
 	std::string get_stem(const std::string& input) {
 		std::string word = get_only_letters(input);
-		if ((int)word.size() <= 2) 
+		if ((int)word.size() <= 2)
 			return word;
 
-		if (suff_ending(word, "sses")) 
+		if (suff_ending(word, "sses"))
 			word = erase_suffix(word, 2);
-		else if (suff_ending(word, "ies")) 
+		else if (suff_ending(word, "ies"))
 			word = erase_suffix(word, 3) + "i";
-		else if (suff_ending(word, "s") && word.size() >= 2 && word[word.size() - 2] != 's')  {
+		else if (suff_ending(word, "s") && word.size() >= 2 && word[word.size() - 2] != 's')
 			word = erase_suffix(word, 1);
-		}
 
-		int end_length = 0; 
-		if (suff_ending(word, "ed")) 
+		int end_length = 0;
+		if (suff_ending(word, "ed"))
 			end_length = 2;
-		else if (suff_ending(word, "ing")) 
+		else if (suff_ending(word, "ing"))
 			end_length = 3;
 
 		std::string base = erase_suffix(word, end_length);
-		if (contains_vowel(base)) { 
-			word = base; 
-		}
+		if (contains_vowel(base))
+			word = base;
+
 		if (end_length != 0) {
-			if (suff_ending(word, "at") || suff_ending(word, "bl") || suff_ending(word, "iz")) 
+			if (suff_ending(word, "at") || suff_ending(word, "bl") || suff_ending(word, "iz"))
 				word.push_back('e');
 			else if (cc_ending(word)) {
 				char last = word.back();
-				if (last != 'l' && last != 's' && last != 'z') 
+				if (last != 'l' && last != 's' && last != 'z')
 					word.pop_back();
 			}
-			else if (vc_count(word) == 1 && cvc_ending(word)) 
+			else if (vc_count(word) == 1 && cvc_ending(word))
 				word.push_back('e');
 		}
 		if (suff_ending(word, "y")) {
-			if (word.size() >= 2 && is_vowel(word, (int)word.size() - 2)) 
-			word.back() = 'i';
+			if (word.size() >= 2 && is_vowel(word, (int)word.size() - 2))
+				word.back() = 'i';
 		}
-		
+
 		modify_suff(word);
 
 		size_t match_at = -1;
@@ -169,24 +158,24 @@ namespace porter
 		}
 		if (match_at != -1) {
 			std::string stem = erase_suffix(word, (int)suff_table[match_at].size());
-			if (vc_count(stem) > 1) 
-				word = stem; 
+			if (vc_count(stem) > 1)
+				word = stem;
 		}
 		else if (suff_ending(word, "ion")) {
 			std::string stem = erase_suffix(word, 3);
 			if (!stem.empty()) {
 				char ch = stem.back();
-				if ((ch == 's' || ch == 't') && vc_count(stem) > 1) 
+				if ((ch == 's' || ch == 't') && vc_count(stem) > 1)
 					word = stem;
 			}
 		}
 		if (suff_ending(word, "e")) {
 			std::string stem = erase_suffix(word, 1);
 			int vc_cnt = vc_count(stem);
-			if (vc_cnt > 1 || (vc_cnt == 1 && !cvc_ending(stem))) 
+			if (vc_cnt > 1 || (vc_cnt == 1 && !cvc_ending(stem)))
 				word = stem;
 		}
-		if (suff_ending(word, "ll") && vc_count(erase_suffix(word, 1)) > 1) 
+		if (suff_ending(word, "ll") && vc_count(erase_suffix(word, 1)) > 1)
 			word.pop_back();
 
 		return word;
