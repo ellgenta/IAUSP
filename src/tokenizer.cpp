@@ -3,22 +3,23 @@
 
 std::vector<std::string> tokenize(const std::string& text) {
 	std::vector<std::string> tokens;
-	std::string cur;
+	std::string temp;
 	tokens.reserve(128);
+
 	for (char ch : text) {
 		if (std::isalpha((unsigned char)ch) || std::isdigit((unsigned char)ch)) {
-			cur.push_back(std::tolower((unsigned char)ch));
+			temp.push_back(std::tolower((unsigned char)ch));
 		}
 		else {
-			if (!cur.empty()) {
-				tokens.push_back(std::move(cur));
-				cur.clear();
-				cur.reserve(16);
+			if (!temp.empty()) {
+				tokens.push_back(std::move(temp));
+				temp.clear();
+				temp.reserve(16);
 			}
 		}
 	}
-	if (!cur.empty()) 
-		tokens.push_back(std::move(cur));
+	if (!temp.empty())
+		tokens.push_back(std::move(temp));
 	return tokens;
 }
 
@@ -32,7 +33,7 @@ std::vector<std::string> stem_tokens(const std::vector<std::string>& tokens) {
 	return out;
 }
 
-std::vector<std::string> tokenize_and_stem(const std::string& text) {
+std::vector<std::string> get_tokens(const std::string& text) {
 	auto toks = tokenize(text);
 	return stem_tokens(toks);
 }
