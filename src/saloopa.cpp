@@ -1,7 +1,10 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
-#include "tf-idf.cpp"
+#include <unordered_set>
+#include "search_ranker.cpp"
+#include "tokenizer.cpp"
+#include "stemmer.cpp"
 
 namespace fs = std::filesystem;
 
@@ -123,14 +126,12 @@ public:
 			return truncate_text(text, MAX_SNIPPET_LEN);
 		}
 
-		// Создаем стеммированные версии терминов для поиска
 		std::unordered_set<std::string> search_terms;
 		for (const auto& token : query_tokens) {
 			std::string stemmed = porter::get_stem(token);
 			if (!stemmed.empty()) {
 				search_terms.insert(stemmed);
 			}
-			// Также добавляем оригинальные токены на случай, если они уже стеммированные
 			search_terms.insert(token);
 		}
 
@@ -218,15 +219,15 @@ int main() {
 			continue;
 		}
 	}
-	
-	if (docs.empty()) { //why docs-tf??
+
+	if (docs.empty()) {
 		std::cerr << "No readable documents to index.\n";
 		return 1;
 	}
 
-	SearchRanker ranker;
+	search_ranker ranker;
 	try {
-		ranker.build(docs); 
+		ranker.build(docs);
 	}
 	catch (const std::exception& ex) {
 		std::cerr << "Error building index: " << ex.what() << "\n";
@@ -239,10 +240,10 @@ int main() {
 		std::cout << "Query> ";
 		if (!std::getline(std::cin, user_input)) break;
 		if (user_input.empty()) continue;
-		auto qtokens = tokenize_and_stem(user_input);
-		if (qtokens.empty()) { 
-			std::cout << "(no valid tokens)\n"; 
-			continue; 
+		auto qtokens = get_tokens(user_input);
+		if (qtokens.empty()) {
+			std::cout << "(no valid tokens)\n";
+			continue;
 		}
 
 		auto scores = ranker.rank_tokens(qtokens, shown_results_count);
