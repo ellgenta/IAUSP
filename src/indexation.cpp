@@ -6,14 +6,14 @@ private:
     std::string path;
     trie* content = nullptr;
     std::unordered_map<std::string, int> tf_map;
-public: 
+public:
     doc_t() = delete;
 
     doc_t(std::string path, std::string& text) {
         content = new trie;
         this->path = path;
-        std::vector<std::string> tokens = tokenize_and_stem(text);
-        for(auto& t : tokens) {
+        std::vector<std::string> tokens = get_tokens(text);
+        for (auto& t : tokens) {
             tf_map[t] += 1;
             content->insert(t);
         }
@@ -25,13 +25,15 @@ public:
         this->tf_map = other.tf_map;
     }
 
-    doc_t(doc_t&& other) {
+    doc_t(doc_t&& other) noexcept {
         this->path = other.path;
         this->content = other.content;
         this->tf_map = other.tf_map;
     }
-    
-    ~doc_t() {}
+
+    ~doc_t() {
+        delete content;
+    }
 
     std::string get_path() const { return path; }
 
