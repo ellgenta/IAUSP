@@ -95,7 +95,10 @@ private:
 
 				// Вставляем выделение
 				result.insert(adjusted_pos, "[");
-				result.insert(adjusted_pos + term.length() + 1, "]");
+				size_t end_indx = adjusted_pos + 1;
+				while(end_indx < result.length() && isalpha(result.at(end_indx)))
+					end_indx += 1;
+				result.insert(end_indx, "]");
 
 				offset += 2; // Добавили 2 символа: [ и ]
 				pos = found_pos + term.length();
@@ -116,9 +119,9 @@ public:
 	static constexpr size_t CONTEXT_AFTER = 120;
 	static constexpr size_t MAX_SNIPPET_LEN = CONTEXT_BEFORE + CONTEXT_AFTER;
 
-	static std::string make_snippet(const doc_t& doc,
+	static std::string make_snippet(const doc_t* doc,
 		const std::vector<std::string>& query_tokens) {
-		const std::filesystem::path path = doc.get_path();
+		const std::filesystem::path path = doc->get_path();
 		std::string text = read_file(path);
 		if (text.empty() || query_tokens.empty()) {
 			return truncate_text(text, MAX_SNIPPET_LEN);
@@ -196,7 +199,7 @@ int main() {
 	}
 
 	std::cout << "Found " << found.size() << " .txt files. Indexing...\n";
-	std::vector<doc_t> docs;
+	std::vector<doc_t*> docs;
 
 	for (const auto& fp : found) {
 		try {
@@ -210,7 +213,8 @@ int main() {
 					continue;
 				}
 			}
-			docs.push_back(doc_t(fp.string(), text));
+			doc_t* d = new doc_t(fp.string(), text);
+			docs.push_back(d);
 		}
 		catch (const std::exception& ex) {
 			std::cerr << "Warning: exception reading file " << fp.string() << " : " << ex.what() << " -- skipping\n";
@@ -253,7 +257,7 @@ int main() {
 			double score = scores[r].first;
 			size_t docidx = scores[r].second;
 			if (docidx >= docs.size()) continue;
-			std::cout << (r + 1) << ". [" << score << "] " << docs[docidx].get_path() << "\n";
+			std::cout << (r + 1) << ". [" << score << "] " << docs[docidx]->get_path() << "\n";
 			SnippetGenerator generator;
 			std::string snippet = SnippetGenerator::make_snippet(docs[docidx], qtokens);
 			std::cout << "<" << (snippet.size() > 150 ? snippet.substr(0, 150) + ">" : snippet) << "\n";

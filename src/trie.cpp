@@ -3,13 +3,17 @@
 
 #define TRIE
 #define UNIT_TESTS
-#define CH_SIZE  256
+#define CH_SIZE  26
 
 struct trie_node {
-    trie_node* ch[CH_SIZE] = { 0 };
+    trie_node* ch[CH_SIZE];
     size_t count = 0;
 
-    trie_node() {}
+    trie_node() {
+        for(int i = 0; i < CH_SIZE; i++) {
+            ch[i] = nullptr;
+        }
+    }
 
     bool is_leaf() {
         if (this == nullptr) {
@@ -31,6 +35,8 @@ private:
     trie_node* root = nullptr;
     size_t ch_count = 0;
 
+    inline size_t get_index(char& sym) { return (unsigned int)sym % (unsigned int)'a'; }
+
     trie_node* _find(trie_node* root, std::string& stem, size_t i) {
         if (root == nullptr) {
             return nullptr;
@@ -40,8 +46,8 @@ private:
             return root;
         }
 
-        if (root->ch[stem[i]] != nullptr) {
-            return _find(root->ch[stem[i]], stem, i + 1);
+        if (root->ch[get_index(stem[i])] != nullptr) {
+            return _find(root->ch[get_index(stem[i])], stem, i + 1);
         }
 
         return nullptr;
@@ -52,8 +58,8 @@ private:
             return;
         }
 
-        if (root->ch[stem[i]] != nullptr) {
-            _insert(root->ch[stem[i]], stem, i + 1);
+        if (root->ch[get_index(stem[i])] != nullptr) {
+            _insert(root->ch[get_index(stem[i])], stem, i + 1);
         }
         else {
             if (root == this->root) {
@@ -73,11 +79,11 @@ private:
             return;
         }
 
-        if (root->ch[stem[i]] != nullptr) {
-            _erase(root->ch[stem[i]], stem, i + 1);
-            if (root->ch[stem[i]]->is_leaf() == true) {
+        if (root->ch[get_index(stem[i])] != nullptr) {
+            _erase(root->ch[get_index(stem[i])], stem, i + 1);
+            if (root->ch[get_index(stem[i])]->is_leaf() == true) {
                 delete root->ch[i];
-                root->ch[stem[i]] = nullptr;
+                root->ch[get_index(stem[i])] = nullptr;
             }
         }
 
@@ -89,8 +95,8 @@ private:
             return;
         }
 
-        st_node->ch[stem[st]] = new trie_node;
-        _push_prefix(st_node->ch[stem[st]], stem, st + 1);
+        st_node->ch[get_index(stem[st])] = new trie_node;
+        _push_prefix(st_node->ch[get_index(stem[st])], stem, st + 1);
     }
 
     void _clear(trie_node* root) {

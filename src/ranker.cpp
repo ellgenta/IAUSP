@@ -13,12 +13,12 @@ public:
 	using weight_vector = std::unordered_map<term, double>;
 	using score_pair = std::pair<double, size_t>;
 
-	void build(std::vector<doc_t>& docs) {
+	void build(std::vector<doc_t*>& docs) {
 		docs_tf_.clear();
 		inverted_index_.clear();
 
 		for (size_t doc_id = 0; doc_id < docs.size(); ++doc_id) {
-			const auto tf = docs[doc_id].get_tf_map();
+			const auto tf = docs[doc_id]->get_tf_map();
 			docs_tf_.push_back(tf);
 			for (const auto& kv : tf) {
 				inverted_index_[kv.first].push_back(doc_id);
