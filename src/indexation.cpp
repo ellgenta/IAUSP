@@ -13,12 +13,10 @@ public:
         content = new trie;
         this->path = path;
         std::vector<std::string> tokens = get_tokens(text);
-        /*
         for (auto& t : tokens) {
-            tf_map[t] += 1;
+            //tf_map[t] += 1;
             content->insert(t);
         }
-        */
     }
 
     doc_t(const doc_t& other) {

@@ -6,69 +6,12 @@
 #include <unordered_set>
 #include "indexation.cpp"
 
+using term = std::string;
+using tf_map = std::unordered_map<term, int>;
+using weight_vector = std::unordered_map<term, double>;
+using score_pair = std::pair<double, size_t>;
+
 class search_ranker {
-public:
-	using term = std::string;
-	using tf_map = std::unordered_map<term, int>;
-	using weight_vector = std::unordered_map<term, double>;
-	using score_pair = std::pair<double, size_t>;
-
-	void build(std::vector<doc_t*>& docs) {
-		docs_tf_.clear();
-		inverted_index_.clear();
-
-		for (size_t doc_id = 0; doc_id < docs.size(); ++doc_id) {
-			const auto _content = docs[doc_id]->get_content();
-			auto tf = 
-			docs_tf_.push_back(tf);
-			for (const auto& kv : tf) {
-				inverted_index_[kv.first].push_back(doc_id);
-			}
-		}
-
-		if (docs_tf_.empty()) {
-			idf_.clear();
-			document_vectors_.clear();
-			return;
-		}
-
-		calculate_idf();
-		build_document_vectors();
-
-		for (auto& kv : inverted_index_) {
-			auto& v = kv.second;
-			std::sort(v.begin(), v.end());
-			v.erase(std::unique(v.begin(), v.end()), v.end());
-		}
-	}
-
-	std::vector<score_pair> rank_tokens(const std::vector<std::string>& tokens, size_t top_results_count = 10) const {
-		if (tokens.empty() || document_vectors_.empty()) return {};
-
-		weight_vector query_vector = build_query_vector(tokens);
-		if (query_vector.empty()) return {};
-
-		std::unordered_set<size_t> candidates;
-		for (const auto& t : tokens) {
-			auto it = inverted_index_.find(t);
-			if (it != inverted_index_.end()) {
-				candidates.insert(it->second.begin(), it->second.end());
-			}
-		}
-
-		if (candidates.empty()) return {};
-
-		std::vector<score_pair> document_scores;
-		document_scores.reserve(candidates.size());
-		for (size_t idx : candidates) {
-			double similarity_score = calculate_cosine_similarity(query_vector, document_vectors_[idx]);
-			if (similarity_score > 0.0)
-				document_scores.emplace_back(similarity_score, idx);
-		}
-
-		return get_top_results(document_scores, top_results_count);
-	}
-
 private:
 	std::vector<tf_map> docs_tf_;
 	std::vector<weight_vector> document_vectors_;
@@ -191,5 +134,61 @@ private:
 			[](const score_pair& a, const score_pair& b) { return a.first > b.first; });
 
 		return std::vector<score_pair>(scores.begin(), scores.begin() + top_results_count);
+	}
+public:
+	void build(std::vector<doc_t*>& docs) {
+		docs_tf_.clear();
+		inverted_index_.clear();
+
+		for (size_t doc_id = 0; doc_id < docs.size(); ++doc_id) {
+			const auto _content = docs[doc_id]->get_content();
+			auto tf = _content->get_tf_map();
+			docs_tf_.push_back(tf);
+			for (const auto& kv : tf) {
+				inverted_index_[kv.first].push_back(doc_id);
+			}
+		}
+
+		if (docs_tf_.empty()) {
+			idf_.clear();
+			document_vectors_.clear();
+			return;
+		}
+
+		calculate_idf();
+		build_document_vectors();
+
+		for (auto& kv : inverted_index_) {
+			auto& v = kv.second;
+			std::sort(v.begin(), v.end());
+			v.erase(std::unique(v.begin(), v.end()), v.end());
+		}
+	}
+
+	std::vector<score_pair> rank_tokens(const std::vector<std::string>& tokens, size_t top_results_count = 10) const {
+		if (tokens.empty() || document_vectors_.empty()) return {};
+
+		weight_vector query_vector = build_query_vector(tokens);
+		if (query_vector.empty()) return {};
+
+		std::unordered_set<size_t> candidates;
+		for (const auto& t : tokens) {
+			auto it = inverted_index_.find(t);
+			if (it != inverted_index_.end()) {
+				candidates.insert(it->second.begin(), it->second.end());
+			}
+		}
+
+		if (candidates.empty()) return {};
+
+		std::vector<score_pair> document_scores;
+		document_scores.reserve(candidates.size());
+		for (size_t idx : candidates) {
+			double similarity_score = calculate_cosine_similarity(query_vector, document_vectors_[idx]);
+			if (similarity_score > 0.0)
+				document_scores.emplace_back(similarity_score, idx);
+		}
+
+		return get_top_results(document_scores, top_results_count);
 	}
 };
