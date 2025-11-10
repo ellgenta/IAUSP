@@ -199,7 +199,7 @@ int main() {
 	}
 
 	std::cout << "Found " << found.size() << " .txt files. Indexing...\n";
-	std::vector<doc_t*> docs;
+	doc_list docs;
 
 	for (const auto& fp : found) {
 		try {

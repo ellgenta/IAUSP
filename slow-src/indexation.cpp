@@ -33,9 +33,47 @@ public:
 
     ~doc_t() {
         delete content;
+        content = nullptr;
     }
 
     std::string get_path() const { return path; }
 
     std::unordered_map<std::string, int> get_tf_map() const { return tf_map; }
+
+    size_t get_bytes_count() {
+        size_t bytes = 0;
+        bytes += sizeof(path) + path.capacity();
+        //bytes += ... (trie)
+        bytes += sizeof(tf_map);
+        for(auto& p : tf_map) {
+            bytes += sizeof(p.first) + p.first.capacity();
+            bytes += sizeof(p.second);
+        }
+        return bytes;
+    }
+};
+
+class doc_list {
+private:
+	std::vector<doc_t*> list = {};
+public:
+	doc_list() {}
+
+	~doc_list() {
+		for(auto& d : list) {
+			delete d;
+		}
+	}
+
+	doc_t* operator[](size_t pos) { return list[pos]; }
+
+	void push_back(doc_t* d) { list.push_back(d); }
+
+	bool empty() { return list.empty(); }
+
+	size_t size() { return list.size(); }
+
+	size_t capacity() { return list.capacity(); }
+
+    doc_t* back() { return list.back(); }
 };

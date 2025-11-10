@@ -1,5 +1,6 @@
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #define TRIE
 #define UNIT_TESTS

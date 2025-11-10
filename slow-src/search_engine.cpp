@@ -116,9 +116,9 @@ public:
 	static constexpr size_t CONTEXT_AFTER = 120;
 	static constexpr size_t MAX_SNIPPET_LEN = CONTEXT_BEFORE + CONTEXT_AFTER;
 
-	static std::string make_snippet(const doc_t& doc,
+	static std::string make_snippet(const doc_t* doc,
 		const std::vector<std::string>& query_tokens) {
-		const std::filesystem::path path = doc.get_path();
+		const std::filesystem::path path = doc->get_path();
 		std::string text = read_file(path);
 		if (text.empty() || query_tokens.empty()) {
 			return truncate_text(text, MAX_SNIPPET_LEN);
@@ -196,7 +196,7 @@ int main() {
 	}
 
 	std::cout << "Found " << found.size() << " .txt files. Indexing...\n";
-	std::vector<doc_t> docs;
+	doc_list docs;
 
 	for (const auto& fp : found) {
 		try {
@@ -210,7 +210,9 @@ int main() {
 					continue;
 				}
 			}
-			docs.push_back(doc_t(fp.string(), text));
+			doc_t* d = new doc_t(fp.string(), text);
+			docs.push_back(d);
+			std::cout << fp.string() << " | " << docs.back()->get_bytes_count() << " bytes" << std::endl; 
 		}
 		catch (const std::exception& ex) {
 			std::cerr << "Warning: exception reading file " << fp.string() << " : " << ex.what() << " -- skipping\n";
@@ -253,7 +255,7 @@ int main() {
 			double score = scores[r].first;
 			size_t docidx = scores[r].second;
 			if (docidx >= docs.size()) continue;
-			std::cout << (r + 1) << ". [" << score << "] " << docs[docidx].get_path() << "\n";
+			std::cout << (r + 1) << ". [" << score << "] " << docs[docidx]->get_path() << "\n";
 			SnippetGenerator generator;
 			std::string snippet = SnippetGenerator::make_snippet(docs[docidx], qtokens);
 			std::cout << "<" << (snippet.size() > 150 ? snippet.substr(0, 150) + ">" : snippet) << "\n";

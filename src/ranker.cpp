@@ -136,7 +136,7 @@ private:
 		return std::vector<score_pair>(scores.begin(), scores.begin() + top_results_count);
 	}
 public:
-	void build(std::vector<doc_t*>& docs) {
+	void build(doc_list& docs) {
 		docs_tf_.clear();
 		inverted_index_.clear();
 
