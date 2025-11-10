@@ -18,7 +18,8 @@ public:
 		inverted_index_.clear();
 
 		for (size_t doc_id = 0; doc_id < docs.size(); ++doc_id) {
-			const auto tf = docs[doc_id]->get_tf_map();
+			const auto _content = docs[doc_id]->get_content();
+			auto tf = 
 			docs_tf_.push_back(tf);
 			for (const auto& kv : tf) {
 				inverted_index_[kv.first].push_back(doc_id);

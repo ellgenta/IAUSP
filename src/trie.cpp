@@ -113,6 +113,17 @@ private:
         delete root;
         root = nullptr;
     }
+
+    void traverse(std::unordered_map<std::string, size_t>& tf_map, trie_node* root, std::string& temp) {
+        for(size_t i = 0; i < CH_SIZE; i++) {
+            if(root->ch[i] != nullptr) {
+                temp += ('a' + i);
+                traverse(tf_map, root->ch[i], temp);
+            }
+            temp.resize(temp.size()-1);
+            tf_map.insert(std::make_pair(temp, this->root->ch[i]->count));
+        }
+    }
 public:
     trie() { root = new trie_node; }
 
@@ -167,6 +178,13 @@ public:
         }
 
         return ans;
+    }
+
+    std::unordered_map<std::string, size_t> get_tf_map() {
+        std::unordered_map<std::string, size_t> tf_map;
+        std::string temp = "";
+        traverse(tf_map, root, temp);
+        return tf_map;
     }
 
     void clear() {
