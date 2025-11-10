@@ -7,6 +7,7 @@
 
 struct trie_node {
     trie_node* ch[CH_SIZE];
+    bool is_term = false;
     size_t count = 0;
 
     trie_node() {
@@ -35,9 +36,9 @@ private:
     trie_node* root = nullptr;
     size_t ch_count = 0;
 
-    inline size_t get_index(char& sym) { return (unsigned int)sym % (unsigned int)'a'; }
+    inline size_t get_index(char& sym) const { return (unsigned int)sym % (unsigned int)'a'; }
 
-    trie_node* _find(trie_node* root, std::string& stem, size_t i) {
+    trie_node* _find(trie_node* root, std::string& stem, size_t i) const {
         if (root == nullptr) {
             return nullptr;
         }
@@ -54,7 +55,13 @@ private:
     }
 
     void _insert(trie_node* root, std::string& stem, size_t i) {
-        if (root == nullptr || i == stem.size()) {
+        if (root == nullptr) {
+            return;
+        }
+
+        if(i == stem.size()) {
+            root->count += 1;
+            root->is_term = true;
             return;
         }
 
@@ -76,6 +83,9 @@ private:
 
         if (i == stem.size()) {
             root->count -= 1;
+            if(root->count == 0) {
+                root->is_term = false;
+            }
             return;
         }
 
@@ -92,6 +102,7 @@ private:
     void _push_prefix(trie_node* st_node, std::string& stem, size_t st) {
         if (st == stem.size()) {
             st_node->count += 1;
+            st_node->is_term = true;
             return;
         }
 
@@ -114,14 +125,16 @@ private:
         root = nullptr;
     }
 
-    void traverse(std::unordered_map<std::string, size_t>& tf_map, trie_node* root, std::string& temp) {
+    void traverse(std::unordered_map<std::string, int>& tf_map, trie_node* root, std::string& temp) const {
         for(size_t i = 0; i < CH_SIZE; i++) {
             if(root->ch[i] != nullptr) {
                 temp += ('a' + i);
                 traverse(tf_map, root->ch[i], temp);
+                if(root->ch[i]->is_term == true) {
+                    tf_map.insert(std::make_pair(temp, (int)root->ch[i]->count));
+                }
+                temp.pop_back();
             }
-            temp.resize(temp.size()-1);
-            tf_map.insert(std::make_pair(temp, this->root->ch[i]->count));
         }
     }
 public:
@@ -136,7 +149,7 @@ public:
 
     ~trie() { clear(); }
 
-    trie_node* find(std::string& stem) { return _find(root, stem, 0); }
+    trie_node* find(std::string& stem) const { return _find(root, stem, 0); }
 
     void insert(std::string& stem) { _insert(root, stem, 0); }
 
@@ -155,7 +168,7 @@ public:
         }
     }
 
-    size_t count(std::string& stem) {
+    size_t count(std::string& stem) const {
         trie_node* node = find(stem);
 
         if (node == nullptr) {
@@ -166,7 +179,7 @@ public:
         }
     }
 
-    size_t count(std::vector<std::string>& stems) {
+    size_t count(std::vector<std::string>& stems) const {
         size_t ans = 0;
         trie_node* temp = nullptr;
 
@@ -180,8 +193,8 @@ public:
         return ans;
     }
 
-    std::unordered_map<std::string, size_t> get_tf_map() {
-        std::unordered_map<std::string, size_t> tf_map;
+    std::unordered_map<std::string, int> get_tf_map() const {
+        std::unordered_map<std::string, int> tf_map;
         std::string temp = "";
         traverse(tf_map, root, temp);
         return tf_map;
