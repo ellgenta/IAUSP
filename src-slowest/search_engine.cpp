@@ -4,8 +4,6 @@
 #include <unordered_set>
 #include "ranker.cpp"
 
-#define MEMORY_TESTS
-
 namespace fs = std::filesystem;
 
 static std::string read_file(const fs::path& p) {
@@ -97,10 +95,7 @@ private:
 
 				// Вставляем выделение
 				result.insert(adjusted_pos, "[");
-				size_t end_indx = adjusted_pos + 1;
-				while(end_indx < result.length() && isalpha(result.at(end_indx)))
-					end_indx += 1;
-				result.insert(end_indx, "]");
+				result.insert(adjusted_pos + term.length() + 1, "]");
 
 				offset += 2; // Добавили 2 символа: [ и ]
 				pos = found_pos + term.length();
@@ -217,9 +212,7 @@ int main() {
 			}
 			doc_t* d = new doc_t(fp.string(), text);
 			docs.push_back(d);
-			#ifdef MEMORY_TESTS
 			std::cout << fp.string() << " | " << docs.back()->get_bytes_count() << " bytes" << std::endl; 
-			#endif
 		}
 		catch (const std::exception& ex) {
 			std::cerr << "Warning: exception reading file " << fp.string() << " : " << ex.what() << " -- skipping\n";

@@ -4,36 +4,36 @@
 class doc_t {
 private:
     std::string path;
-    trie* content = nullptr;
+    //trie* content = nullptr;
     std::unordered_map<std::string, int> tf_map;
 public:
     doc_t() = delete;
 
     doc_t(std::string path, std::string& text) {
-        content = new trie;
+        //content = new trie;
         this->path = path;
         std::vector<std::string> tokens = get_tokens(text);
         for (auto& t : tokens) {
             tf_map[t] += 1;
-            content->insert(t);
+            //content->insert(t);
         }
     }
 
     doc_t(const doc_t& other) {
         this->path = other.path;
-        this->content = other.content;
+        //this->content = other.content;
         this->tf_map = other.tf_map;
     }
 
     doc_t(doc_t&& other) noexcept {
         this->path = other.path;
-        this->content = other.content;
+        //this->content = other.content;
         this->tf_map = other.tf_map;
     }
 
     ~doc_t() {
-        delete content;
-        content = nullptr;
+        //delete content;
+        //content = nullptr;
     }
 
     std::string get_path() const { return path; }
@@ -43,12 +43,12 @@ public:
     size_t get_bytes_count() {
         size_t bytes = 0;
         bytes += sizeof(path) + path.capacity();
-        //bytes += ... (trie)
-        bytes += content->get_bytes_count();
         bytes += sizeof(tf_map);
         for(auto& p : tf_map) {
-            bytes += sizeof(p.first) + p.first.capacity();
-            bytes += sizeof(p.second);
+            size_t temp = 0;
+            temp += sizeof(p.first) + p.first.capacity();
+            temp += sizeof(p.second);
+            bytes += 24 * temp;
         }
         return bytes;
     }

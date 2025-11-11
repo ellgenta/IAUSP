@@ -9,7 +9,7 @@
 class search_ranker {
 public:
 	using term = std::string;
-	using tf_map = std::unordered_map<term, int>;
+	using tf_map = std::unordered_map<std::string, int>;
 	using weight_vector = std::unordered_map<term, double>;
 	using score_pair = std::pair<double, size_t>;
 
