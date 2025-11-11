@@ -35,6 +35,14 @@ public:
     const trie* get_content() { return content; }
 
     std::string get_path() const { return path; }
+
+    size_t get_bytes_count() {
+        size_t bytes = 0;
+        bytes += sizeof(path) + path.capacity();
+        //bytes += ... (trie)
+        bytes += content->get_bytes_count();
+        return bytes;
+    }
 };
 
 class doc_list {

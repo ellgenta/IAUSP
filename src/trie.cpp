@@ -138,6 +138,15 @@ private:
             }
         }
     }
+
+    void _get_bytes_count(trie_node* root, size_t& bytes) {
+        for(size_t i = 0; i < CH_SIZE; i++) {
+            if(root->ch[i] != nullptr) {
+                _get_bytes_count(root->ch[i], bytes);
+            }
+        }
+        bytes += sizeof(*root);
+    }
 public:
     trie() { root = new trie_node; }
 
@@ -204,5 +213,12 @@ public:
     void clear() {
         _clear(root);
         root = nullptr;
+    }
+
+    size_t get_bytes_count() {
+        size_t bytes = 0;
+        _get_bytes_count(this->root, bytes);
+        bytes += sizeof(*this);
+        return bytes;
     }
 };

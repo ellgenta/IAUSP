@@ -215,6 +215,7 @@ int main() {
 			}
 			doc_t* d = new doc_t(fp.string(), text);
 			docs.push_back(d);
+			std::cout << fp.string() << " | " << docs.back()->get_bytes_count() << " bytes" << std::endl; 
 		}
 		catch (const std::exception& ex) {
 			std::cerr << "Warning: exception reading file " << fp.string() << " : " << ex.what() << " -- skipping\n";

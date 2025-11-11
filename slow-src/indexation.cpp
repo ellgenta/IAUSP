@@ -44,6 +44,7 @@ public:
         size_t bytes = 0;
         bytes += sizeof(path) + path.capacity();
         //bytes += ... (trie)
+        bytes += content->get_bytes_count();
         bytes += sizeof(tf_map);
         for(auto& p : tf_map) {
             bytes += sizeof(p.first) + p.first.capacity();
