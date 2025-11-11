@@ -35,5 +35,5 @@ std::vector<std::string> stem_tokens(const std::vector<std::string>& tokens) {
 
 std::vector<std::string> get_tokens(const std::string& text) {
 	auto toks = tokenize(text);
-	return stem_tokens(toks);
+	return toks;
 }
