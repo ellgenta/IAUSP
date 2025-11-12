@@ -4,6 +4,9 @@
 #include <unordered_set>
 #include "ranker.cpp"
 
+#define TIME_TESTS
+#include <chrono>
+
 namespace fs = std::filesystem;
 
 static std::string read_file(const fs::path& p) {
@@ -198,6 +201,9 @@ int main() {
 	std::cout << "Found " << found.size() << " .txt files. Indexing...\n";
 	doc_list docs;
 
+	#ifdef TIME_TESTS
+		auto t_before = std::chrono::high_resolution_clock::now();
+	#endif
 	for (const auto& fp : found) {
 		try {
 			std::string text = read_file(fp);
@@ -212,13 +218,19 @@ int main() {
 			}
 			doc_t* d = new doc_t(fp.string(), text);
 			docs.push_back(d);
-			std::cout << fp.string() << " | " << docs.back()->get_bytes_count() << " bytes" << std::endl; 
+			//std::cout << fp.string() << " | " << docs.back()->get_bytes_count() << " bytes" << std::endl; 
 		}
 		catch (const std::exception& ex) {
 			std::cerr << "Warning: exception reading file " << fp.string() << " : " << ex.what() << " -- skipping\n";
 			continue;
 		}
 	}
+
+	#ifdef TIME_TESTS
+        auto t_after = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> t_delta = t_after - t_before; 
+        printf("Tokenization + Indexation: %.5f ms\n", t_delta);
+	#endif
 
 	if (docs.empty()) {
 		std::cerr << "No readable documents to index.\n";
@@ -240,6 +252,9 @@ int main() {
 		std::cout << "Query> ";
 		if (!std::getline(std::cin, user_input)) break;
 		if (user_input.empty()) continue;
+		#ifdef TIME_TESTS
+				auto t_before = std::chrono::high_resolution_clock::now();
+		#endif
 		auto qtokens = get_tokens(user_input);
 		if (qtokens.empty()) {
 			std::cout << "(no valid tokens)\n";
@@ -251,6 +266,11 @@ int main() {
 			std::cout << "No matching documents.\n";
 			continue;
 		}
+		#ifdef TIME_TESTS
+		auto t_after = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> t_delta = t_after - t_before; 
+        printf("Query analysis: %.5f ms\n", t_delta);
+		#endif
 		for (size_t r = 0; r < scores.size(); ++r) {
 			double score = scores[r].first;
 			size_t docidx = scores[r].second;
