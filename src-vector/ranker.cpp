@@ -128,12 +128,30 @@ private:
 	weight_vector build_query_vector(const std::vector<std::string>& tokens) const {
 		tf_map query_term_frequencies;
 		for (const auto& token : tokens) {
+			/*
 			size_t i = 0;
 			while(i < query_term_frequencies.size()) {
 				if(query_term_frequencies[i].first == token) {
 					query_term_frequencies[i].second += 1;
 				}
 			}
+			*/
+			size_t i = 0;
+			while(i < query_term_frequencies.size()) {
+				if(query_term_frequencies[i].first == token) {
+					query_term_frequencies[i].second += 1;
+					break;
+				}
+				i += 1;
+			}
+			if(i == query_term_frequencies.size()) {
+				query_term_frequencies.push_back(std::make_pair(token, 1));
+			}
+			/*
+			for (const auto& token : tokens) {
+				+= 1;
+			}
+			*/
 		}
 
 		return build_and_normalize_vector(query_term_frequencies);
